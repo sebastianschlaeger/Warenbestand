@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 from st_aggrid import AgGrid, GridOptionsBuilder
+from datetime import datetime
 
 # Funktion zum Laden der Zuordnungsdatei von Google Drive
 def load_mapping(url):
@@ -42,20 +43,22 @@ def create_table():
     c.execute('''
         CREATE TABLE IF NOT EXISTS inventory (
             sku TEXT PRIMARY KEY,
-            stock INTEGER
+            stock INTEGER,
+            ordered_quantity INTEGER,
+            arrival_date TEXT
         )
     ''')
     conn.commit()
     conn.close()
 
 # Funktion zum Speichern oder Aktualisieren des Warenbestands in der Datenbank
-def update_inventory(sku, stock):
+def update_inventory(sku, stock, ordered_quantity, arrival_date):
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        INSERT OR REPLACE INTO inventory (sku, stock)
-        VALUES (?, ?)
-    ''', (sku, stock))
+        INSERT OR REPLACE INTO inventory (sku, stock, ordered_quantity, arrival_date)
+        VALUES (?, ?, ?, ?)
+    ''', (sku, stock, ordered_quantity, arrival_date))
     conn.commit()
     conn.close()
 
@@ -66,7 +69,7 @@ def load_inventory():
     c.execute('SELECT * FROM inventory')
     data = c.fetchall()
     conn.close()
-    inventory_df = pd.DataFrame(data, columns=['SKU', 'Stock'])
+    inventory_df = pd.DataFrame(data, columns=['SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date'])
     return inventory_df
 
 # URL der Zuordnungsdatei in Google Drive
@@ -107,7 +110,13 @@ if uploaded_file is not None:
     # Berechnung der Reichweite in Tagen
     merged_df['Verbrauch_30_Tage'] = merged_df['Anzahl']
     merged_df['Stock'] = merged_df['Stock'].fillna(0)
-    merged_df['Reichweite_in_Tagen'] = merged_df.apply(lambda row: (row['Stock'] / (row['Verbrauch_30_Tage'] / 30)) if row['Verbrauch_30_Tage'] > 0 else 0, axis=1)
+    merged_df['Ordered_Quantity'] = merged_df['Ordered_Quantity'].fillna(0)
+    merged_df['Arrival_Date'] = pd.to_datetime(merged_df['Arrival_Date'], errors='coerce')
+    
+    # Berücksichtigen der bestellten Menge für die Berechnung der Reichweite
+    current_date = datetime.now()
+    merged_df['Total_Stock'] = merged_df.apply(lambda row: row['Stock'] + row['Ordered_Quantity'] if pd.notnull(row['Arrival_Date']) and row['Arrival_Date'] <= current_date else row['Stock'], axis=1)
+    merged_df['Reichweite_in_Tagen'] = merged_df.apply(lambda row: (row['Total_Stock'] / (row['Verbrauch_30_Tage'] / 30)) if row['Verbrauch_30_Tage'] > 0 else 0, axis=1)
     
     # Erstellen der Tabelle zur Bearbeitung der Bestandsdaten
     gb = GridOptionsBuilder.from_dataframe(merged_df)
@@ -127,8 +136,8 @@ if uploaded_file is not None:
     
     if st.button("Bestände speichern"):
         for index, row in updated_df.iterrows():
-            update_inventory(row['Mapped_SKU'], row['Stock'])
+            update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], row['Arrival_Date'])
         st.success("Bestände wurden gespeichert!")
     
     st.write("Gespeicherter Warenbestand und Reichweite:")
-    st.dataframe(merged_df[['Mapped_SKU', 'Stock', 'Reichweite_in_Tagen']])
+    st.dataframe(merged_df[['Mapped_SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date', 'Reichweite_in_Tagen']])
