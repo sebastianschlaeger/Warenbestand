@@ -10,10 +10,13 @@ def load_mapping(url):
     return mapping_df
 
 # Funktion zum Verarbeiten der hochgeladenen Datei
-def process_file(file, mapping_df):
+def process_file(file):
     # Skip the first 7 rows and read the relevant data into a new dataframe
     df = pd.read_excel(file, skiprows=7)
-    
+    return df
+
+# Funktion zum Anwenden des SKU-Mappings
+def apply_sku_mapping(df, mapping_df):
     # Extract the first 5 characters of the SKU
     df['SKU_prefix'] = df['SKU'].astype(str).str[:5]
     
@@ -91,7 +94,8 @@ create_or_update_table()
 
 if uploaded_file is not None:
     mapping_df = load_mapping(mapping_url)
-    processed_data = process_file(uploaded_file, mapping_df)
+    raw_df = process_file(uploaded_file)
+    processed_data = apply_sku_mapping(raw_df, mapping_df)
     
     st.write("Verarbeitete Daten:")
     st.dataframe(processed_data)
