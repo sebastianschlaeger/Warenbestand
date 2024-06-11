@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 
-# Funktion zum Laden der Zuordnungsdatei von GitHub
+# Funktion zum Laden der Zuordnungsdatei von Google Drive
 def load_mapping(url):
     mapping_df = pd.read_csv(url)
     return mapping_df
@@ -29,8 +29,8 @@ def process_file(file, mapping_df):
     
     return grouped_df
 
-# URL der Zuordnungsdatei in Ihrem GitHub-Repository
-mapping_url = "https://github.com/sebastianschlaeger/Purgruen-Warenbestand/blob/main/sku_mapping.csv"
+# URL der Zuordnungsdatei in Google Drive
+mapping_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFPFGMjeiiONwFjegJjsGRPDjtkW8bHRfqJX92a4P9k7yGsYjHGKuvpA1QNNrAI4eugweXxaDSeSwv/pub?output=csv"
 
 # Laden der Zuordnungsdatei
 mapping_df = load_mapping(mapping_url)
