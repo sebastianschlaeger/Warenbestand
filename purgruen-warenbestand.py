@@ -4,6 +4,11 @@ import sqlite3
 from st_aggrid import AgGrid, GridOptionsBuilder
 from datetime import datetime
 
+# Function to load the mapping file from Google Drive
+def load_mapping(url):
+    mapping_df = pd.read_csv(url, dtype={'Original_SKU': str, 'Mapped_SKU': str})
+    return mapping_df
+
 # Function to load the order details from Google Sheets
 def load_order_details(url):
     order_df = pd.read_csv(url, dtype={'SKU': str})
@@ -66,6 +71,8 @@ def load_inventory():
     inventory_df = pd.DataFrame(data, columns=['SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date'])
     return inventory_df
 
+# URL of the mapping file on Google Drive
+mapping_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFPFGMjeiiONwFjegJjsGRPDjtkW8bHRfqJX92a4P9k7yGsYjHGKuvpA1QNNrAI4eugweXxaDSeSwv/pub?output=csv"
 # URL of the order details file on Google Sheets
 order_details_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRtHjzMbywaF5yf9ejdMB7k20vu6Rb3TvpjUq1wWwgDcd4MOZsAAZxgtmUnLdZ7f1ugs0iMY_ZmouP3/pub?output=csv"
 
