@@ -11,9 +11,12 @@ def process_file(file, mapping_df):
     df = df.merge(mapping_df, how='left', left_on='Original_SKU', right_on='Original_SKU')
     df['Mapped_SKU'] = df['Mapped_SKU'].fillna(df['Original_SKU'])
     df = df[df['Exclude'] != 'Yes']
+    
+    # Nur die ersten 5 Zeichen der Mapped_SKU für das Gruppieren verwenden
     df['Mapped_SKU_prefix'] = df['Mapped_SKU'].astype(str).str[:5]
     grouped_df = df.groupby('Mapped_SKU_prefix', as_index=False)['Anzahl'].sum()
     grouped_df['Anzahl'] = grouped_df['Anzahl'].apply(lambda x: f"{x:,.0f}".replace(',', '.'))
+    
     return grouped_df
 
 mapping_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFPFGMjeiiONwFjegJjsGRPDjtkW8bHRfqJX92a4P9k7yGsYjHGKuvpA1QNNrAI4eugweXxaDSeSwv/pub?output=csv"
