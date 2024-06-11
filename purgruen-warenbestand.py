@@ -42,8 +42,13 @@ if uploaded_file is not None:
     st.write("Verarbeitete Daten:")
     st.dataframe(processed_data)
     
-    # Filtern und Summieren der relevanten SKUs
-    relevant_skus = ['80522', '80523', '80524', '80525', '80526', '80527', '80528']
-    total_sum = processed_data[processed_data['Mapped_SKU'].isin(relevant_skus)]['Anzahl'].sum()
+    # Flüssigdünger und Krümelgranulat Kategorien
+    fluessigduenger_skus = ['80522', '80523', '80524', '80525', '80528']
+    kruemelgranulat_skus = ['80526', '80527']
     
-    st.write(f"Gesamtsumme der SKUs 80522 - 80528: {total_sum}")
+    # Berechnung der Summen für jede Kategorie
+    fluessigduenger_sum = processed_data[processed_data['Mapped_SKU'].isin(fluessigduenger_skus)]['Anzahl'].sum()
+    kruemelgranulat_sum = processed_data[processed_data['Mapped_SKU'].isin(kruemelgranulat_skus)]['Anzahl'].sum()
+    
+    st.write(f"Gesamtsumme für Flüssigdünger (80522, 80523, 80524, 80525, 80528): {fluessigduenger_sum}")
+    st.write(f"Gesamtsumme für Krümelgranulat (80526, 80527): {kruemelgranulat_sum}")
