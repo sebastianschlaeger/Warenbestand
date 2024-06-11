@@ -30,7 +30,7 @@ def process_file(file, mapping_df):
     return grouped_df
 
 # URL der Zuordnungsdatei in Ihrem GitHub-Repository
-mapping_url = "https://raw.githubusercontent.com/IhrBenutzername/IhrRepository/main/sku_mapping.csv"
+mapping_url = "https://github.com/sebastianschlaeger/Purgruen-Warenbestand/blob/main/sku_mapping.csv"
 
 # Laden der Zuordnungsdatei
 mapping_df = load_mapping(mapping_url)
