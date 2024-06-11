@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import requests
 
 # Funktion zum Laden der Zuordnungsdatei von Google Drive
 def load_mapping(url):
@@ -32,14 +31,12 @@ def process_file(file, mapping_df):
 # URL der Zuordnungsdatei in Google Drive
 mapping_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFPFGMjeiiONwFjegJjsGRPDjtkW8bHRfqJX92a4P9k7yGsYjHGKuvpA1QNNrAI4eugweXxaDSeSwv/pub?output=csv"
 
-# Laden der Zuordnungsdatei
-mapping_df = load_mapping(mapping_url)
-
 st.title("Datei-Uploader und Datenverarbeiter")
 
 uploaded_file = st.file_uploader("Laden Sie eine Datei hoch", type=["xlsx"])
 
 if uploaded_file is not None:
+    mapping_df = load_mapping(mapping_url)
     processed_data = process_file(uploaded_file, mapping_df)
     st.write("Verarbeitete Daten:")
     st.dataframe(processed_data)
