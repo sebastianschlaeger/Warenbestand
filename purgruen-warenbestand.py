@@ -4,7 +4,7 @@ import requests
 
 # Funktion zum Laden der Zuordnungsdatei von Google Drive
 def load_mapping(url):
-    mapping_df = pd.read_csv(url)
+    mapping_df = pd.read_csv(url, dtype={'Original_SKU': str, 'Mapped_SKU': str})
     return mapping_df
 
 # Funktion zum Verarbeiten der hochgeladenen Datei
