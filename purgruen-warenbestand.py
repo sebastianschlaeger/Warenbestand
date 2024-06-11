@@ -11,17 +11,17 @@ def process_file(file, mapping_df):
     # Skip the first 7 rows and read the relevant data into a new dataframe
     df = pd.read_excel(file, skiprows=7)
     
-    # Extract the first 5 characters of the SKU
-    df['SKU_prefix'] = df['SKU'].astype(str).str[:5]
+    # Convert SKU to string to ensure consistency
+    df['SKU'] = df['SKU'].astype(str)
     
-    # Apply the mapping
-    df = df.merge(mapping_df, how='left', left_on='SKU_prefix', right_on='Original_SKU')
+    # Apply the full SKU mapping
+    df = df.merge(mapping_df, how='left', left_on='SKU', right_on='Original_SKU')
     
     # Handle exclusions
     df = df[df['Exclude'] != 'Yes']
     
-    # Replace SKU_prefix with Mapped_SKU where applicable
-    df['Mapped_SKU'] = df['Mapped_SKU'].fillna(df['SKU_prefix'])
+    # Replace SKU with Mapped_SKU where applicable
+    df['Mapped_SKU'] = df['Mapped_SKU'].fillna(df['SKU'])
     
     # Group by the Mapped_SKU and sum the Anzahl column
     grouped_df = df.groupby('Mapped_SKU', as_index=False)['Anzahl'].sum()
