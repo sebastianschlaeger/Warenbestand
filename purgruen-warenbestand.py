@@ -102,7 +102,11 @@ if uploaded_file is not None:
     st.write("Aktueller Warenbestand:")
 
     # Laden des aktuellen Warenbestands
-    inventory_df = load_inventory()
+    try:
+        inventory_df = load_inventory()
+    except Exception as e:
+        st.error(f"Fehler beim Laden des Warenbestands: {e}")
+        inventory_df = pd.DataFrame(columns=['SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date'])
     
     # Zusammenführen der Bestandsdaten mit den verarbeiteten Daten
     merged_df = processed_data.merge(inventory_df, how='left', left_on='Mapped_SKU', right_on='SKU')
