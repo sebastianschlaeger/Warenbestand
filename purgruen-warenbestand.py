@@ -124,10 +124,13 @@ if uploaded_file is not None:
     merged_df['Ordered_Quantity'] = merged_df['Ordered_Quantity'].fillna(0)
     merged_df['Arrival_Date'] = pd.to_datetime(merged_df['Arrival_Date'], errors='coerce')
     
-    # Berücksichtigen der bestellten Menge für die Berechnung der Reichweite
+    # Berücksichtigung der bestellten Menge für die Berechnung der Reichweite
     current_date = datetime.now()
-    merged_df['Total_Stock'] = merged_df.apply(lambda row: row['Stock'] + row['Ordered_Quantity'] if pd.notnull(row['Arrival_Date']) and row['Arrival_Date'] <= current_date else row['Stock'], axis=1)
-    merged_df['Reichweite_in_Tagen'] = merged_df.apply(lambda row: round((row['Total_Stock'] / (row['Verbrauch_30_Tage'] / 30)), 0) if row['Verbrauch_30_Tage'] > 0 else 0, axis=1)
+    merged_df['Verbrauch_pro_Tag'] = merged_df['Verbrauch_30_Tage'] / 30
+    merged_df['Verbrauch_bis_Ankunft'] = (merged_df['Arrival_Date'] - current_date).dt.days * merged_df['Verbrauch_pro_Tag']
+    merged_df['Verbrauch_bis_Ankunft'] = merged_df['Verbrauch_bis_Ankunft'].apply(lambda x: max(x, 0))  # Negative Werte auf 0 setzen
+    merged_df['Bestand_bei_Ankunft'] = merged_df.apply(lambda row: row['Stock'] + row['Ordered_Quantity'] - row['Verbrauch_bis_Ankunft'] if pd.notnull(row['Arrival_Date']) and row['Arrival_Date'] > current_date else row['Stock'], axis=1)
+    merged_df['Reichweite_in_Tagen'] = merged_df.apply(lambda row: round(row['Bestand_bei_Ankunft'] / row['Verbrauch_pro_Tag'], 0) if row['Verbrauch_pro_Tag'] > 0 else 0, axis=1)
     
     # Erstellen der Tabelle zur Bearbeitung der Bestandsdaten
     gb = GridOptionsBuilder.from_dataframe(merged_df)
