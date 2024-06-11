@@ -4,43 +4,30 @@ import sqlite3
 from st_aggrid import AgGrid, GridOptionsBuilder
 from datetime import datetime
 
-# Funktion zum Laden der Zuordnungsdatei von Google Drive
+# Function to load the mapping file from Google Drive
 def load_mapping(url):
     mapping_df = pd.read_csv(url, dtype={'Original_SKU': str, 'Mapped_SKU': str})
     return mapping_df
 
-# Funktion zum Verarbeiten der hochgeladenen Datei
+# Function to process the uploaded file
 def process_file(file, mapping_df):
-    # Skip the first 7 rows and read the relevant data into a new dataframe
     df = pd.read_excel(file, skiprows=7)
-    
-    # Extract the first 5 characters of the SKU
     df['SKU_prefix'] = df['SKU'].astype(str).str[:5]
-    
-    # Apply the mapping
     df = df.merge(mapping_df, how='left', left_on='SKU_prefix', right_on='Original_SKU')
-    
-    # Handle exclusions
     df = df[df['Exclude'] != 'Yes']
-    
-    # Replace SKU_prefix with Mapped_SKU where applicable
     df['Mapped_SKU'] = df['Mapped_SKU'].fillna(df['SKU_prefix'])
-    
-    # Group by the Mapped_SKU and sum the Anzahl column
     grouped_df = df.groupby('Mapped_SKU', as_index=False)['Anzahl'].sum()
-    
     return grouped_df
 
-# Funktion zum Erstellen einer Verbindung zur SQLite-Datenbank
+# Function to create a connection to the SQLite database
 def get_connection():
     conn = sqlite3.connect('inventory.db')
     return conn
 
-# Funktion zum Erstellen oder Aktualisieren der Tabelle für den Warenbestand
+# Function to create or update the inventory table
 def create_or_update_table():
     conn = get_connection()
     c = conn.cursor()
-    # Erstellen der Tabelle, falls sie nicht existiert
     c.execute('''
         CREATE TABLE IF NOT EXISTS inventory (
             sku TEXT PRIMARY KEY,
@@ -49,7 +36,6 @@ def create_or_update_table():
             arrival_date TEXT
         )
     ''')
-    # Überprüfen und Hinzufügen fehlender Spalten
     c.execute("PRAGMA table_info(inventory)")
     columns = [info[1] for info in c.fetchall()]
     if 'ordered_quantity' not in columns:
@@ -59,7 +45,7 @@ def create_or_update_table():
     conn.commit()
     conn.close()
 
-# Funktion zum Speichern oder Aktualisieren des Warenbestands in der Datenbank
+# Function to update inventory in the database
 def update_inventory(sku, stock, ordered_quantity, arrival_date):
     conn = get_connection()
     c = conn.cursor()
@@ -70,7 +56,7 @@ def update_inventory(sku, stock, ordered_quantity, arrival_date):
     conn.commit()
     conn.close()
 
-# Funktion zum Laden des Warenbestands aus der Datenbank
+# Function to load inventory from the database
 def load_inventory():
     conn = get_connection()
     c = conn.cursor()
@@ -80,12 +66,12 @@ def load_inventory():
     inventory_df = pd.DataFrame(data, columns=['SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date'])
     return inventory_df
 
-# URL der Zuordnungsdatei in Google Drive
+# URL of the mapping file on Google Drive
 mapping_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFPFGMjeiiONwFjegJjsGRPDjtkW8bHRfqJX92a4P9k7yGsYjHGKuvpA1QNNrAI4eugweXxaDSeSwv/pub?output=csv"
 
-st.title("Datei-Uploader und Datenverarbeiter")
+st.title("File Uploader and Data Processor")
 
-uploaded_file = st.file_uploader("Laden Sie eine Datei hoch", type=["xlsx"])
+uploaded_file = st.file_uploader("Upload a file", type=["xlsx"])
 
 create_or_update_table()
 
@@ -93,46 +79,48 @@ if uploaded_file is not None:
     mapping_df = load_mapping(mapping_url)
     processed_data = process_file(uploaded_file, mapping_df)
     
-    st.write("Verarbeitete Daten:")
+    st.write("Processed Data:")
     st.dataframe(processed_data)
     
-    # Flüssigdünger und Krümelgranulat Kategorien
+    # Define categories
     fluessigduenger_skus = ['80522', '80523', '80524', '80525', '80528']
     kruemelgranulat_skus = ['80526', '80527']
     
-    # Berechnung der Summen für jede Kategorie
+    # Calculate sums for each category
     fluessigduenger_sum = processed_data[processed_data['Mapped_SKU'].isin(fluessigduenger_skus)]['Anzahl'].sum()
     kruemelgranulat_sum = processed_data[processed_data['Mapped_SKU'].isin(kruemelgranulat_skus)]['Anzahl'].sum()
     
-    st.write(f"Gesamtsumme für Flüssigdünger (80522, 80523, 80524, 80525, 80528): {fluessigduenger_sum}")
-    st.write(f"Gesamtsumme für Krümelgranulat (80526, 80527): {kruemelgranulat_sum}")
+    st.write(f"Total for Liquid Fertilizer (80522, 80523, 80524, 80525, 80528): {fluessigduenger_sum}")
+    st.write(f"Total for Granular Fertilizer (80526, 80527): {kruemelgranulat_sum}")
     
-    st.write("Aktueller Warenbestand:")
-
+    st.write("Current Inventory:")
     try:
         inventory_df = load_inventory()
     except Exception as e:
-        st.error(f"Fehler beim Laden des Warenbestands: {e}")
+        st.error(f"Error loading inventory: {e}")
         inventory_df = pd.DataFrame(columns=['SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date'])
     
-    # Zusammenführen der Bestandsdaten mit den verarbeiteten Daten
+    # Ensure all SKUs from processed_data are included
+    all_skus_df = pd.DataFrame({'SKU': processed_data['Mapped_SKU']}).drop_duplicates()
+    inventory_df = all_skus_df.merge(inventory_df, how='left', on='SKU')
+    
+    # Merge inventory data with processed data
     merged_df = processed_data.merge(inventory_df, how='left', left_on='Mapped_SKU', right_on='SKU')
     
-    # Berechnung der Reichweite in Tagen
+    # Calculate usage and stock details
     merged_df['Verbrauch_30_Tage'] = merged_df['Anzahl']
     merged_df['Stock'] = merged_df['Stock'].fillna(0)
     merged_df['Ordered_Quantity'] = merged_df['Ordered_Quantity'].fillna(0)
     merged_df['Arrival_Date'] = pd.to_datetime(merged_df['Arrival_Date'], errors='coerce')
     
-    # Berücksichtigung der bestellten Menge für die Berechnung der Reichweite
     current_date = datetime.now()
     merged_df['Verbrauch_pro_Tag'] = merged_df['Verbrauch_30_Tage'] / 30
     merged_df['Verbrauch_bis_Ankunft'] = (merged_df['Arrival_Date'] - current_date).dt.days * merged_df['Verbrauch_pro_Tag']
-    merged_df['Verbrauch_bis_Ankunft'] = merged_df['Verbrauch_bis_Ankunft'].apply(lambda x: max(x, 0))  # Negative Werte auf 0 setzen
+    merged_df['Verbrauch_bis_Ankunft'] = merged_df['Verbrauch_bis_Ankunft'].apply(lambda x: max(x, 0))
     merged_df['Bestand_bei_Ankunft'] = merged_df.apply(lambda row: row['Stock'] + row['Ordered_Quantity'] - row['Verbrauch_bis_Ankunft'] if pd.notnull(row['Arrival_Date']) and row['Arrival_Date'] > current_date else row['Stock'], axis=1)
     merged_df['Reichweite_in_Tagen'] = merged_df.apply(lambda row: round(row['Bestand_bei_Ankunft'] / row['Verbrauch_pro_Tag'], 0) if row['Verbrauch_pro_Tag'] > 0 else 0, axis=1)
     
-    # Erstellen der Tabelle zur Bearbeitung der Bestandsdaten
+    # Create editable inventory table
     gb = GridOptionsBuilder.from_dataframe(merged_df)
     gb.configure_pagination()
     gb.configure_side_bar()
@@ -148,10 +136,10 @@ if uploaded_file is not None:
     
     updated_df = grid_response['data']
     
-    if st.button("Bestände speichern"):
+    if st.button("Save Inventory"):
         for index, row in updated_df.iterrows():
             update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], row['Arrival_Date'].strftime('%Y-%m-%d') if pd.notnull(row['Arrival_Date']) else None)
-        st.success("Bestände wurden gespeichert!")
+        st.success("Inventory saved!")
     
-    st.write("Gespeicherter Warenbestand und Reichweite:")
+    st.write("Saved Inventory and Range:")
     st.dataframe(merged_df[['Mapped_SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date', 'Reichweite_in_Tagen']])
