@@ -26,6 +26,9 @@ def process_file(file, mapping_df):
     # Group by the Mapped_SKU and sum the Anzahl column
     grouped_df = df.groupby('Mapped_SKU', as_index=False)['Anzahl'].sum()
     
+    # Format the 'Anzahl' column with a point as the thousand separator
+    grouped_df['Anzahl'] = grouped_df['Anzahl'].apply(lambda x: f"{x:,.0f}".replace(',', '.'))
+    
     return grouped_df
 
 # URL der Zuordnungsdatei in Google Drive
@@ -47,8 +50,8 @@ if uploaded_file is not None:
     kruemelgranulat_skus = ['80526', '80527']
     
     # Berechnung der Summen für jede Kategorie
-    fluessigduenger_sum = processed_data[processed_data['Mapped_SKU'].isin(fluessigduenger_skus)]['Anzahl'].sum()
-    kruemelgranulat_sum = processed_data[processed_data['Mapped_SKU'].isin(kruemelgranulat_skus)]['Anzahl'].sum()
+    fluessigduenger_sum = processed_data[processed_data['Mapped_SKU'].isin(fluessigduenger_skus)]['Anzahl'].str.replace('.', '').astype(float).sum()
+    kruemelgranulat_sum = processed_data[processed_data['Mapped_SKU'].isin(kruemelgranulat_skus)]['Anzahl'].str.replace('.', '').astype(float).sum()
     
     # Formatieren der Summen mit Punkt als Tausendertrennzeichen
     fluessigduenger_sum_formatted = f"{fluessigduenger_sum:,.0f}".replace(',', '.')
