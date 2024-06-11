@@ -36,10 +36,11 @@ def get_connection():
     conn = sqlite3.connect('inventory.db')
     return conn
 
-# Funktion zum Erstellen der Tabelle für den Warenbestand, falls sie noch nicht existiert
-def create_table():
+# Funktion zum Erstellen oder Aktualisieren der Tabelle für den Warenbestand
+def create_or_update_table():
     conn = get_connection()
     c = conn.cursor()
+    # Erstellen der Tabelle, falls sie nicht existiert
     c.execute('''
         CREATE TABLE IF NOT EXISTS inventory (
             sku TEXT PRIMARY KEY,
@@ -48,6 +49,13 @@ def create_table():
             arrival_date TEXT
         )
     ''')
+    # Überprüfen und Hinzufügen fehlender Spalten
+    c.execute("PRAGMA table_info(inventory)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'ordered_quantity' not in columns:
+        c.execute("ALTER TABLE inventory ADD COLUMN ordered_quantity INTEGER")
+    if 'arrival_date' not in columns:
+        c.execute("ALTER TABLE inventory ADD COLUMN arrival_date TEXT")
     conn.commit()
     conn.close()
 
@@ -79,7 +87,7 @@ st.title("Datei-Uploader und Datenverarbeiter")
 
 uploaded_file = st.file_uploader("Laden Sie eine Datei hoch", type=["xlsx"])
 
-create_table()
+create_or_update_table()
 
 if uploaded_file is not None:
     mapping_df = load_mapping(mapping_url)
@@ -101,7 +109,6 @@ if uploaded_file is not None:
     
     st.write("Aktueller Warenbestand:")
 
-    # Laden des aktuellen Warenbestands
     try:
         inventory_df = load_inventory()
     except Exception as e:
