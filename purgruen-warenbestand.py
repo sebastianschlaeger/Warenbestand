@@ -11,7 +11,7 @@ def load_mapping(url):
 
 # Funktion zum Verarbeiten der hochgeladenen Datei
 def process_file(file, mapping_df):
-    # Skip the first 7 rows and read the relevant data into a new dataframe
+    # Skip the first 7 rows and read the relevanten data into a new dataframe
     df = pd.read_excel(file, skiprows=7)
     
     # Extract the first 5 characters of the SKU
@@ -147,7 +147,7 @@ if uploaded_file is not None:
     
     if st.button("Bestände speichern"):
         for index, row in updated_df.iterrows():
-            update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], row['Arrival_Date'])
+            update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], row['Arrival_Date'].strftime('%Y-%m-%d') if pd.notnull(row['Arrival_Date']) else None)
         st.success("Bestände wurden gespeichert!")
     
     st.write("Gespeicherter Warenbestand und Reichweite:")
