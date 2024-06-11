@@ -40,6 +40,9 @@ if uploaded_file is not None:
     processed_data = process_file(uploaded_file, mapping_df)
     
     st.write("Verarbeitete Daten:")
+    
+    # Formatierung der "Anzahl"-Spalte ohne Tausender-Komma
+    processed_data['Anzahl'] = processed_data['Anzahl'].apply(lambda x: int(x))
     st.dataframe(processed_data)
     
     # Flüssigdünger und Krümelgranulat Kategorien
@@ -49,10 +52,6 @@ if uploaded_file is not None:
     # Berechnung der Summen für jede Kategorie
     fluessigduenger_sum = processed_data[processed_data['Mapped_SKU'].isin(fluessigduenger_skus)]['Anzahl'].sum()
     kruemelgranulat_sum = processed_data[processed_data['Mapped_SKU'].isin(kruemelgranulat_skus)]['Anzahl'].sum()
-    
-    # Formatierung der Summen ohne Tausender-Komma
-    fluessigduenger_sum = int(fluessigduenger_sum)
-    kruemelgranulat_sum = int(kruemelgranulat_sum)
     
     st.write(f"Gesamtsumme für Flüssigdünger (80522, 80523, 80524, 80525, 80528): {fluessigduenger_sum}")
     st.write(f"Gesamtsumme für Krümelgranulat (80526, 80527): {kruemelgranulat_sum}")
