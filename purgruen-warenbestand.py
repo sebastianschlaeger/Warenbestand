@@ -4,10 +4,10 @@ import sqlite3
 from st_aggrid import AgGrid, GridOptionsBuilder
 from datetime import datetime
 
-# Function to load the mapping file from Google Drive
-def load_mapping(url):
-    mapping_df = pd.read_csv(url, dtype={'Original_SKU': str, 'Mapped_SKU': str})
-    return mapping_df
+# Function to load the order details from Google Sheets
+def load_order_details(url):
+    order_df = pd.read_csv(url, dtype={'SKU': str})
+    return order_df
 
 # Function to process the uploaded file
 def process_file(file, mapping_df):
@@ -66,8 +66,8 @@ def load_inventory():
     inventory_df = pd.DataFrame(data, columns=['SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date'])
     return inventory_df
 
-# URL of the mapping file on Google Drive
-mapping_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFPFGMjeiiONwFjegJjsGRPDjtkW8bHRfqJX92a4P9k7yGsYjHGKuvpA1QNNrAI4eugweXxaDSeSwv/pub?output=csv"
+# URL of the order details file on Google Sheets
+order_details_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRtHjzMbywaF5yf9ejdMB7k20vu6Rb3TvpjUq1wWwgDcd4MOZsAAZxgtmUnLdZ7f1ugs0iMY_ZmouP3/pub?output=csv"
 
 st.title("File Uploader and Data Processor")
 
@@ -76,6 +76,7 @@ uploaded_file = st.file_uploader("Upload a file", type=["xlsx"])
 create_or_update_table()
 
 if uploaded_file is not None:
+    order_details_df = load_order_details(order_details_url)
     mapping_df = load_mapping(mapping_url)
     processed_data = process_file(uploaded_file, mapping_df)
     
@@ -100,8 +101,9 @@ if uploaded_file is not None:
         st.error(f"Error loading inventory: {e}")
         inventory_df = pd.DataFrame(columns=['SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date'])
     
-    # Merge inventory data with processed data
+    # Merge inventory data with processed data and order details
     merged_df = processed_data.merge(inventory_df, how='left', left_on='Mapped_SKU', right_on='SKU')
+    merged_df = merged_df.merge(order_details_df, how='left', left_on='Mapped_SKU', right_on='SKU')
     
     # Calculate usage and stock details
     merged_df['Verbrauch_30_Tage'] = merged_df['Anzahl']
