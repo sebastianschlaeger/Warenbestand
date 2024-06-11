@@ -7,24 +7,18 @@ def load_mapping(url):
     return mapping_df
 
 # Funktion zum Verarbeiten der hochgeladenen Datei
-def process_file(file, mapping_df):
-    # Skip the first 7 rows and read the relevant data into a new dataframe
-    df = pd.read_excel(file, skiprows=7)
-    
-    # Extract the first 5 characters of the SKU
-    df['SKU_prefix'] = df['SKU'].astype(str).str[:5]
-    
-    # Apply the mapping
-    df = df.merge(mapping_df, how='left', left_on='SKU_prefix', right_on='Original_SKU')
+def process_file_fixed(sales_df, mapping_df):
+    # Apply the mapping using the full SKU instead of SKU_prefix
+    merged_df = sales_df.merge(mapping_df, how='left', left_on='SKU', right_on='Original_SKU')
     
     # Handle exclusions
-    df = df[df['Exclude'] != 'Yes']
+    merged_df = merged_df[merged_df['Exclude'] != 'Yes']
     
-    # Replace SKU_prefix with Mapped_SKU where applicable
-    df['Mapped_SKU'] = df['Mapped_SKU'].fillna(df['SKU_prefix'])
+    # Replace SKU with Mapped_SKU where applicable
+    merged_df['Mapped_SKU'] = merged_df['Mapped_SKU'].fillna(merged_df['SKU_prefix'])
     
     # Group by the Mapped_SKU and sum the Anzahl column
-    grouped_df = df.groupby('Mapped_SKU', as_index=False)['Anzahl'].sum()
+    grouped_df = merged_df.groupby('Mapped_SKU', as_index=False)['Anzahl'].sum()
     
     # Format the 'Anzahl' column with a point as the thousand separator
     grouped_df['Anzahl'] = grouped_df['Anzahl'].apply(lambda x: f"{x:,.0f}".replace(',', '.'))
