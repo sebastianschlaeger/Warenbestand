@@ -144,6 +144,9 @@ if uploaded_file is not None:
                 if pd.notnull(row['Arrival_Date']):
                     arrival_date_str = row['Arrival_Date'].strftime('%Y-%m-%d')
             
+            # Debugging prints to verify values
+            print(f"Updating SKU: {row['Mapped_SKU']} - Stock: {row['Stock']} - Ordered Quantity: {row['Ordered_Quantity']} - Arrival Date: {arrival_date_str}")
+            
             update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], arrival_date_str)
         
         st.success("Inventory saved!")
