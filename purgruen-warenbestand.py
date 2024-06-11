@@ -104,6 +104,11 @@ if uploaded_file is not None:
     # Zusammenführen der Bestandsdaten mit den verarbeiteten Daten
     merged_df = processed_data.merge(inventory_df, how='left', left_on='Mapped_SKU', right_on='SKU')
     
+    # Berechnung der Reichweite in Tagen
+    merged_df['Verbrauch_30_Tage'] = merged_df['Anzahl']
+    merged_df['Stock'] = merged_df['Stock'].fillna(0)
+    merged_df['Reichweite_in_Tagen'] = merged_df.apply(lambda row: (row['Stock'] / (row['Verbrauch_30_Tage'] / 30)) if row['Verbrauch_30_Tage'] > 0 else 0, axis=1)
+    
     # Erstellen der Tabelle zur Bearbeitung der Bestandsdaten
     gb = GridOptionsBuilder.from_dataframe(merged_df)
     gb.configure_pagination()
@@ -125,5 +130,5 @@ if uploaded_file is not None:
             update_inventory(row['Mapped_SKU'], row['Stock'])
         st.success("Bestände wurden gespeichert!")
     
-    st.write("Gespeicherter Warenbestand:")
-    st.dataframe(load_inventory())
+    st.write("Gespeicherter Warenbestand und Reichweite:")
+    st.dataframe(merged_df[['Mapped_SKU', 'Stock', 'Reichweite_in_Tagen']])
