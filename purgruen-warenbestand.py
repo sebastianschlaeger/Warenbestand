@@ -42,8 +42,8 @@ if uploaded_file is not None:
     st.write("Verarbeitete Daten:")
     
     # Formatierung der "Anzahl"-Spalte ohne Tausender-Komma
-    processed_data['Anzahl'] = processed_data['Anzahl'].apply(lambda x: int(x))
-    st.dataframe(processed_data)
+    processed_data['Anzahl'] = processed_data['Anzahl'].astype(int)
+    st.dataframe(processed_data.style.format({'Anzahl': '{:,.0f}'}))
     
     # Flüssigdünger und Krümelgranulat Kategorien
     fluessigduenger_skus = ['80522', '80523', '80524', '80525', '80528']
