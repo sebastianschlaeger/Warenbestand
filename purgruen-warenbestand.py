@@ -5,8 +5,8 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 from datetime import datetime
 
 # Funktion zum Laden der Zuordnungsdatei von Google Drive
-def load_mapping(url):
-    mapping_df = pd.read_csv(url, dtype={'Original_SKU': str, 'Mapped_SKU': str})
+def load_mapping(file_path):
+    mapping_df = pd.read_csv(file_path, dtype={'Original_SKU': str, 'Mapped_SKU': str})
     return mapping_df
 
 # Funktion zum Verarbeiten der hochgeladenen Datei
@@ -80,8 +80,9 @@ def load_inventory():
     inventory_df = pd.DataFrame(data, columns=['SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date'])
     return inventory_df
 
-# URL der Zuordnungsdatei in Google Drive
-mapping_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFPFGMjeiiONwFjegJjsGRPDjtkW8bHRfqJX92a4P9k7yGsYjHGKuvpA1QNNrAI4eugweXxaDSeSwv/pub?output=csv"
+# Datei-Pfade
+mapping_file_path = '/mnt/data/sku_mapping - Tabellenblatt1.csv'
+sales_file_path = '/mnt/data/salesbyarticle (54).xlsx'
 
 st.title("Datei-Uploader und Datenverarbeiter")
 
@@ -90,7 +91,7 @@ uploaded_file = st.file_uploader("Laden Sie eine Datei hoch", type=["xlsx"])
 create_or_update_table()
 
 if uploaded_file is not None:
-    mapping_df = load_mapping(mapping_url)
+    mapping_df = load_mapping(mapping_file_path)
     processed_data = process_file(uploaded_file, mapping_df)
     
     st.write("Verarbeitete Daten:")
@@ -150,8 +151,4 @@ if uploaded_file is not None:
     
     if st.button("Bestände speichern"):
         for index, row in updated_df.iterrows():
-            update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], row['Arrival_Date'].strftime('%Y-%m-%d') if pd.notnull(row['Arrival_Date']) else None)
-        st.success("Bestände wurden gespeichert!")
-    
-    st.write("Gespeicherter Warenbestand und Reichweite:")
-    st.dataframe(merged_df[['Mapped_SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date', 'Reichweite_in_Tagen']])
+            update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], row['Arrival_Date'].strftime('%Y-%m-%d
