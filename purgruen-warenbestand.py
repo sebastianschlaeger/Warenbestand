@@ -151,4 +151,8 @@ if uploaded_file is not None:
     
     if st.button("Bestände speichern"):
         for index, row in updated_df.iterrows():
-            update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], row['Arrival_Date'].strftime('%Y-%m-%d
+            update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], row['Arrival_Date'].strftime('%Y-%m-%d') if pd.notnull(row['Arrival_Date']) else None)
+        st.success("Bestände wurden gespeichert!")
+    
+    st.write("Gespeicherter Warenbestand und Reichweite:")
+    st.dataframe(merged_df[['Mapped_SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date', 'Reichweite_in_Tagen']])
