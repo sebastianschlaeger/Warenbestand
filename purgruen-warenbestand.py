@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+from st_aggrid import AgGrid, GridOptionsBuilder
 
 # Funktion zum Laden der Zuordnungsdatei von Google Drive
 def load_mapping(url):
@@ -96,10 +97,33 @@ if uploaded_file is not None:
     st.write(f"Gesamtsumme für Krümelgranulat (80526, 80527): {kruemelgranulat_sum}")
     
     st.write("Aktueller Warenbestand:")
-    for sku in processed_data['Mapped_SKU']:
-        stock = st.number_input(f"Warenbestand für SKU {sku}", min_value=0, step=1, key=sku)
-        update_inventory(sku, stock)
-    
+
+    # Laden des aktuellen Warenbestands
     inventory_df = load_inventory()
+    
+    # Zusammenführen der Bestandsdaten mit den verarbeiteten Daten
+    merged_df = processed_data.merge(inventory_df, how='left', left_on='Mapped_SKU', right_on='SKU')
+    
+    # Erstellen der Tabelle zur Bearbeitung der Bestandsdaten
+    gb = GridOptionsBuilder.from_dataframe(merged_df)
+    gb.configure_pagination()
+    gb.configure_side_bar()
+    gb.configure_default_column(editable=True)
+    grid_options = gb.build()
+    
+    grid_response = AgGrid(
+        merged_df,
+        gridOptions=grid_options,
+        update_mode='MODEL_CHANGED',
+        editable=True
+    )
+    
+    updated_df = grid_response['data']
+    
+    if st.button("Bestände speichern"):
+        for index, row in updated_df.iterrows():
+            update_inventory(row['Mapped_SKU'], row['Stock'])
+        st.success("Bestände wurden gespeichert!")
+    
     st.write("Gespeicherter Warenbestand:")
-    st.dataframe(inventory_df)
+    st.dataframe(load_inventory())
