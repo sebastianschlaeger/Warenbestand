@@ -66,7 +66,7 @@ def update_inventory(sku, stock, ordered_quantity, arrival_date):
 def load_inventory():
     conn = get_connection()
     c = conn.cursor()
-    c.execute('SELECT * FROM inventory')
+    c.execute('SELECT sku, stock, ordered_quantity, arrival_date FROM inventory')
     data = c.fetchall()
     conn.close()
     inventory_df = pd.DataFrame(data, columns=['SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date'])
