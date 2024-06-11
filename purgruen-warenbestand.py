@@ -139,10 +139,10 @@ if uploaded_file is not None:
     if st.button("Save Inventory"):
         for index, row in updated_df.iterrows():
             # Ensure Arrival_Date is properly handled
-            if pd.notnull(row['Arrival_Date']):
-                arrival_date_str = row['Arrival_Date'].strftime('%Y-%m-%d')
-            else:
-                arrival_date_str = None
+            arrival_date_str = None
+            if isinstance(row['Arrival_Date'], pd.Timestamp):
+                if pd.notnull(row['Arrival_Date']):
+                    arrival_date_str = row['Arrival_Date'].strftime('%Y-%m-%d')
             
             update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], arrival_date_str)
         
