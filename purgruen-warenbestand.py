@@ -138,7 +138,14 @@ if uploaded_file is not None:
     
     if st.button("Save Inventory"):
         for index, row in updated_df.iterrows():
-            update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], row['Arrival_Date'].strftime('%Y-%m-%d') if pd.notnull(row['Arrival_Date']) else None)
+            # Ensure Arrival_Date is properly handled
+            if pd.notnull(row['Arrival_Date']):
+                arrival_date_str = row['Arrival_Date'].strftime('%Y-%m-%d')
+            else:
+                arrival_date_str = None
+            
+            update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], arrival_date_str)
+        
         st.success("Inventory saved!")
     
     st.write("Saved Inventory and Range:")
