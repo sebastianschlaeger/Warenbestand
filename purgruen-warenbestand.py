@@ -11,7 +11,7 @@ def load_mapping(url):
 
 # Funktion zum Verarbeiten der hochgeladenen Datei
 def process_file(file, mapping_df):
-    # Skip the first 7 rows and read the relevanten data into a new dataframe
+    # Skip the first 7 rows and read the relevant data into a new dataframe
     df = pd.read_excel(file, skiprows=7)
     
     # Extract the first 5 characters of the SKU
@@ -127,7 +127,7 @@ if uploaded_file is not None:
     # Berücksichtigen der bestellten Menge für die Berechnung der Reichweite
     current_date = datetime.now()
     merged_df['Total_Stock'] = merged_df.apply(lambda row: row['Stock'] + row['Ordered_Quantity'] if pd.notnull(row['Arrival_Date']) and row['Arrival_Date'] <= current_date else row['Stock'], axis=1)
-    merged_df['Reichweite_in_Tagen'] = merged_df.apply(lambda row: (row['Total_Stock'] / (row['Verbrauch_30_Tage'] / 30)) if row['Verbrauch_30_Tage'] > 0 else 0, axis=1)
+    merged_df['Reichweite_in_Tagen'] = merged_df.apply(lambda row: round((row['Total_Stock'] / (row['Verbrauch_30_Tage'] / 30)), 2) if row['Verbrauch_30_Tage'] > 0 else 0, axis=1)
     
     # Erstellen der Tabelle zur Bearbeitung der Bestandsdaten
     gb = GridOptionsBuilder.from_dataframe(merged_df)
