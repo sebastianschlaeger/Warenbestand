@@ -100,10 +100,6 @@ if uploaded_file is not None:
         st.error(f"Error loading inventory: {e}")
         inventory_df = pd.DataFrame(columns=['SKU', 'Stock', 'Ordered_Quantity', 'Arrival_Date'])
     
-    # Ensure all SKUs from processed_data are included
-    all_skus_df = pd.DataFrame({'SKU': processed_data['Mapped_SKU']}).drop_duplicates()
-    inventory_df = all_skus_df.merge(inventory_df, how='left', on='SKU')
-    
     # Merge inventory data with processed data
     merged_df = processed_data.merge(inventory_df, how='left', left_on='Mapped_SKU', right_on='SKU')
     
@@ -138,17 +134,7 @@ if uploaded_file is not None:
     
     if st.button("Save Inventory"):
         for index, row in updated_df.iterrows():
-            # Ensure Arrival_Date is properly handled
-            arrival_date_str = None
-            if isinstance(row['Arrival_Date'], pd.Timestamp):
-                if pd.notnull(row['Arrival_Date']):
-                    arrival_date_str = row['Arrival_Date'].strftime('%Y-%m-%d')
-            
-            # Debugging prints to verify values
-            print(f"Updating SKU: {row['Mapped_SKU']} - Stock: {row['Stock']} - Ordered Quantity: {row['Ordered_Quantity']} - Arrival Date: {arrival_date_str}")
-            
-            update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], arrival_date_str)
-        
+            update_inventory(row['Mapped_SKU'], row['Stock'], row['Ordered_Quantity'], row['Arrival_Date'].strftime('%Y-%m-%d') if pd.notnull(row['Arrival_Date']) else None)
         st.success("Inventory saved!")
     
     st.write("Saved Inventory and Range:")
