@@ -38,5 +38,12 @@ uploaded_file = st.file_uploader("Laden Sie eine Datei hoch", type=["xlsx"])
 if uploaded_file is not None:
     mapping_df = load_mapping(mapping_url)
     processed_data = process_file(uploaded_file, mapping_df)
+    
     st.write("Verarbeitete Daten:")
     st.dataframe(processed_data)
+    
+    # Filtern und Summieren der relevanten SKUs
+    relevant_skus = ['80522', '80523', '80524', '80525', '80526', '80527', '80528']
+    total_sum = processed_data[processed_data['Mapped_SKU'].isin(relevant_skus)]['Anzahl'].sum()
+    
+    st.write(f"Gesamtsumme der SKUs 80522 - 80528: {total_sum}")
