@@ -1,35 +1,29 @@
-import streamlit as st
-import pandas as pd
+import os
+from flask import Flask, render_template, request, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
 
-def load_mapping(url):
-    mapping_df = pd.read_csv(url, dtype={'Original_SKU': str, 'Mapped_SKU': str})
-    return mapping_df
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
-def process_file(file, mapping_df):
-    df = pd.read_excel(file, skiprows=7)
-    df['Original_SKU'] = df['SKU'].astype(str)
-    df = df.merge(mapping_df, how='left', left_on='Original_SKU', right_on='Original_SKU')
-    df['Mapped_SKU'] = df['Mapped_SKU'].fillna(df['Original_SKU'])
-    df = df[df['Exclude'] != 'Yes']
+class Item(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sku = db.Column(db.String(50), unique=True, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        sku = request.form['sku']
+        price = float(request.form['price'])
+        new_item = Item(sku=sku, price=price)
+        db.session.add(new_item)
+        db.session.commit()
+        return redirect(url_for('index'))
     
-    # Nur die ersten 5 Zeichen der Mapped_SKU für das Gruppieren verwenden
-    df['Mapped_SKU_prefix'] = df['Mapped_SKU'].astype(str).str[:5]
-    grouped_df = df.groupby('Mapped_SKU_prefix', as_index=False)['Anzahl'].sum()
-    grouped_df['Anzahl'] = grouped_df['Anzahl'].apply(lambda x: f"{x:,.0f}".replace(',', '.'))
-    
-    return grouped_df
+    items = Item.query.all()
+    return render_template('index.html', items=items)
 
-mapping_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFPFGMjeiiONwFjegJjsGRPDjtkW8bHRfqJX92a4P9k7yGsYjHGKuvpA1QNNrAI4eugweXxaDSeSwv/pub?output=csv"
-
-st.title("Datei-Uploader und Datenverarbeiter")
-
-uploaded_file = st.file_uploader("Laden Sie eine Datei hoch", type=["xlsx"])
-
-if uploaded_file is not None:
-    mapping_df = load_mapping(mapping_url)
-    processed_data = process_file(uploaded_file, mapping_df)
-    
-    st.write("Verarbeitete Daten:")
-    st.dataframe(processed_data)
-
-    # Hier können spezifische Kategorien oder Analysen ergänzt werden, abhängig von Ihrer Anforderung.
+if __name__ == '__main__':
+    app.run(debug=True)
