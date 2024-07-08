@@ -8,7 +8,7 @@
 <body>
     <h1>Inventar-App</h1>
     
-    <h2>Einzelne SKU hinzufügen</h2>
+    <h2>Neue SKU und Preis hinzufügen</h2>
     <form method="POST">
         <input type="text" name="sku" placeholder="SKU" required>
         <input type="number" name="price" placeholder="Preis in €" step="0.01" required>
@@ -27,6 +27,8 @@
             <tr>
                 <th>SKU</th>
                 <th>Preis (€)</th>
+                <th>Menge</th>
+                <th>Gesamtwert</th>
             </tr>
         </thead>
         <tbody>
@@ -34,6 +36,8 @@
             <tr>
                 <td>{{ item.sku }}</td>
                 <td>{{ item.price }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.price * item.quantity }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -41,5 +45,15 @@
 
     <h2>Gesamtwert des Bestands</h2>
     <p>{{ total_value }} €</p>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
 </body>
 </html>
