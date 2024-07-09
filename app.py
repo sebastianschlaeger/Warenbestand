@@ -37,11 +37,15 @@ def main():
 
 def process_excel_file(uploaded_file):
     try:
+        # Lesen der Excel-Datei
         df = pd.read_excel(uploaded_file)
         st.success("Datei erfolgreich hochgeladen!")
         
-        # Verarbeitung der Daten
-        df['SKU_5'] = df['Name des Produktes'].apply(extract_sku)
+        # Extrahieren der SKU aus Spalte D und der Menge aus Spalte G
+        df['SKU_5'] = df.iloc[:, 3].apply(extract_sku)  # Spalte D ist Index 3
+        df['Menge'] = df.iloc[:, 6]  # Spalte G ist Index 6
+        
+        # Gruppieren nach SKU und Summieren der Mengen
         inventory_summary = df.groupby('SKU_5')['Menge'].sum().reset_index()
         
         # Berechnung des Gesamtwertes
