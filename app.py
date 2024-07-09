@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import io
+import re
 
 # Vorgegebene Kosten pro SKU
 SKU_COSTS = {
@@ -19,6 +19,13 @@ SKU_COSTS = {
     '10695': 2.42
 }
 
+def extract_sku(text):
+    # Extrahiert die ersten 5 Ziffern nach dem ersten Auftreten von 5 aufeinanderfolgenden Ziffern
+    match = re.search(r'\d{5}', text)
+    if match:
+        return match.group()[:5]
+    return None
+
 def main():
     st.title("Inventar-App")
     st.header("Excel-Upload und Inventarauswertung")
@@ -34,7 +41,7 @@ def process_excel_file(uploaded_file):
         st.success("Datei erfolgreich hochgeladen!")
         
         # Verarbeitung der Daten
-        df['SKU_5'] = df['SKU'].astype(str).str[:5]
+        df['SKU_5'] = df['Name des Produktes'].apply(extract_sku)
         inventory_summary = df.groupby('SKU_5')['Menge'].sum().reset_index()
         
         # Berechnung des Gesamtwertes
