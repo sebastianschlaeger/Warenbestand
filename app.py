@@ -19,7 +19,9 @@ SKU_COSTS = {
     '10695': 2.42
 }
 
-def extract_sku(text):
+def extract_sku(value):
+    # Konvertiert den Wert zu einem String
+    text = str(value)
     # Extrahiert die ersten 5 Ziffern nach dem ersten Auftreten von 5 aufeinanderfolgenden Ziffern
     match = re.search(r'\d{5}', text)
     if match:
@@ -42,8 +44,11 @@ def process_excel_file(uploaded_file):
         st.success("Datei erfolgreich hochgeladen!")
         
         # Extrahieren der SKU aus Spalte D und der Menge aus Spalte G
-        df['SKU_5'] = df.iloc[:, 3].apply(extract_sku)  # Spalte D ist Index 3
-        df['Menge'] = df.iloc[:, 6]  # Spalte G ist Index 6
+        df['SKU_5'] = df.iloc[:, 3].apply(extract_sku)
+        df['Menge'] = pd.to_numeric(df.iloc[:, 6], errors='coerce')
+        
+        # Entfernen von Zeilen mit ungültigen SKUs oder Mengen
+        df = df.dropna(subset=['SKU_5', 'Menge'])
         
         # Gruppieren nach SKU und Summieren der Mengen
         inventory_summary = df.groupby('SKU_5')['Menge'].sum().reset_index()
@@ -75,7 +80,8 @@ def process_excel_file(uploaded_file):
         st.bar_chart(top_5_skus.set_index('SKU_5')['Gesamtwert'])
         
     except Exception as e:
-        st.error(f"Fehler beim Verarbeiten der Datei: {e}")
+        st.error(f"Fehler beim Verarbeiten der Datei: {str(e)}")
+        st.write("Bitte überprüfen Sie das Format Ihrer Excel-Datei und stellen Sie sicher, dass die Spalten D (SKU) und G (Menge) die erwarteten Daten enthalten.")
 
 if __name__ == "__main__":
     main()
