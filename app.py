@@ -28,6 +28,12 @@ PALETTEN_MENGEN = {
     '3008': 400
 }
 
+# Einheiten pro Karton für spezielle SKUs
+EINHEITEN_PRO_KARTON = {
+    '80522': 12, '80523': 12, '80524': 12, '80525': 12,
+    '80526': 15, '80527': 15, '80528': 12
+}
+
 def extract_sku(value):
     text = str(value)
     match = re.search(r'\d+', text)
@@ -38,6 +44,9 @@ def extract_sku(value):
 def berechne_menge(einzeln, paletten, sku):
     einzeln = float(einzeln) if pd.notna(einzeln) else 0
     paletten = float(paletten) if pd.notna(paletten) else 0
+    
+    if sku in EINHEITEN_PRO_KARTON:
+        einzeln *= EINHEITEN_PRO_KARTON[sku]
     
     if sku in PALETTEN_MENGEN:
         return paletten * PALETTEN_MENGEN[sku] + einzeln
