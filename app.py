@@ -21,76 +21,50 @@ SKU_COSTS = {
 
 def main():
     st.title("Inventar-App")
-
-    # Seitenleiste für die Navigation
-    page = st.sidebar.selectbox("Wählen Sie eine Seite", ["SKU-Eingabe", "Excel-Upload"])
-
-    if page == "SKU-Eingabe":
-        sku_input()
-    elif page == "Excel-Upload":
-        excel_upload()
-
-def sku_input():
-    st.header("SKU-Eingabe")
-    
-    # Erstellen oder Laden der Inventardaten
-    if 'inventory_data' not in st.session_state:
-        st.session_state.inventory_data = pd.DataFrame(columns=['SKU', 'Preis'])
-
-    # Formular für neue Einträge
-    with st.form("new_entry"):
-        new_sku = st.text_input("SKU (erste 5 Ziffern)")
-        submitted = st.form_submit_button("Hinzufügen")
-        
-        if submitted:
-            if len(new_sku) == 5 and new_sku.isdigit():
-                if new_sku in SKU_COSTS:
-                    price = SKU_COSTS[new_sku]
-                    new_data = pd.DataFrame({'SKU': [new_sku], 'Preis': [price]})
-                    st.session_state.inventory_data = pd.concat([st.session_state.inventory_data, new_data], ignore_index=True)
-                    st.success(f"Eintrag hinzugefügt! SKU: {new_sku}, Preis: {price} €")
-                else:
-                    st.error(f"SKU {new_sku} nicht in der Preisliste gefunden.")
-            else:
-                st.error("Bitte geben Sie eine gültige 5-stellige SKU ein.")
-
-    # Anzeige der aktuellen Daten
-    st.subheader("Aktuelles Inventar")
-    st.dataframe(st.session_state.inventory_data)
-
-    # Berechnung des Gesamtwertes
-    total_value = st.session_state.inventory_data['Preis'].sum()
-    st.write(f"Gesamtwert des Inventars: {total_value:.2f} €")
-
-def excel_upload():
-    st.header("Excel-Upload")
+    st.header("Excel-Upload und Inventarauswertung")
     
     uploaded_file = st.file_uploader("Wählen Sie eine Excel-Datei", type="xlsx")
     
     if uploaded_file is not None:
-        try:
-            df = pd.read_excel(uploaded_file)
-            st.success("Datei erfolgreich hochgeladen!")
-            
-            # Verarbeitung der Daten
-            df['SKU_5'] = df['SKU'].astype(str).str[:5]
-            inventory_summary = df.groupby('SKU_5')['Menge'].sum().reset_index()
-            
-            # Berechnung des Gesamtwertes
-            inventory_summary['Preis'] = inventory_summary['SKU_5'].map(SKU_COSTS)
-            inventory_summary['Gesamtwert'] = inventory_summary['Menge'] * inventory_summary['Preis']
-            
-            # Entfernen von Zeilen, wo kein Preis gefunden wurde
-            inventory_summary = inventory_summary.dropna(subset=['Preis'])
-            
-            st.subheader("Zusammenfassung des Inventars")
-            st.dataframe(inventory_summary)
-            
-            total_value = inventory_summary['Gesamtwert'].sum()
-            st.write(f"Gesamtwert des Inventars: {total_value:.2f} €")
-            
-        except Exception as e:
-            st.error(f"Fehler beim Verarbeiten der Datei: {e}")
+        process_excel_file(uploaded_file)
+
+def process_excel_file(uploaded_file):
+    try:
+        df = pd.read_excel(uploaded_file)
+        st.success("Datei erfolgreich hochgeladen!")
+        
+        # Verarbeitung der Daten
+        df['SKU_5'] = df['SKU'].astype(str).str[:5]
+        inventory_summary = df.groupby('SKU_5')['Menge'].sum().reset_index()
+        
+        # Berechnung des Gesamtwertes
+        inventory_summary['Preis'] = inventory_summary['SKU_5'].map(SKU_COSTS)
+        inventory_summary['Gesamtwert'] = inventory_summary['Menge'] * inventory_summary['Preis']
+        
+        # Entfernen von Zeilen, wo kein Preis gefunden wurde
+        inventory_summary = inventory_summary.dropna(subset=['Preis'])
+        
+        # Anzeigen der Zusammenfassung
+        st.subheader("Zusammenfassung des Inventars")
+        st.dataframe(inventory_summary)
+        
+        # Berechnung und Anzeige des Gesamtwertes
+        total_value = inventory_summary['Gesamtwert'].sum()
+        st.subheader(f"Gesamtwert des Inventars: {total_value:.2f} €")
+        
+        # Zusätzliche Statistiken
+        st.subheader("Zusätzliche Statistiken")
+        st.write(f"Anzahl unterschiedlicher SKUs: {len(inventory_summary)}")
+        st.write(f"Gesamtanzahl aller Artikel: {inventory_summary['Menge'].sum()}")
+        st.write(f"Durchschnittlicher Wert pro Artikel: {(total_value / inventory_summary['Menge'].sum()):.2f} €")
+        
+        # Visualisierung: Top 5 SKUs nach Gesamtwert
+        st.subheader("Top 5 SKUs nach Gesamtwert")
+        top_5_skus = inventory_summary.nlargest(5, 'Gesamtwert')
+        st.bar_chart(top_5_skus.set_index('SKU_5')['Gesamtwert'])
+        
+    except Exception as e:
+        st.error(f"Fehler beim Verarbeiten der Datei: {e}")
 
 if __name__ == "__main__":
     main()
