@@ -55,28 +55,71 @@ def berechne_menge(einzeln, paletten, sku):
     return einzeln
 
 def process_etikettierte_ware(df):
+    errors = []
     df['SKU'] = df.iloc[:, 3].apply(extract_sku)
     df['Menge'] = pd.to_numeric(df.iloc[:, 6], errors='coerce')
+    
+    # Check for missing SKUs or quantities
+    missing_data = df[df['SKU'].isna() | df['Menge'].isna()]
+    if not missing_data.empty:
+        for _, row in missing_data.iterrows():
+            errors.append(f"Zeile {row.name + 2}: Fehlende SKU oder Menge")
+    
     df = df.dropna(subset=['SKU', 'Menge'])
     inventory_summary = df.groupby('SKU')['Menge'].sum().reset_index()
+    
+    # Check for missing prices
     inventory_summary['Preis'] = inventory_summary['SKU'].map(ETIKETTIERTE_PREISE)
+    missing_prices = inventory_summary[inventory_summary['Preis'].isna()]
+    if not missing_prices.empty:
+        for _, row in missing_prices.iterrows():
+            errors.append(f"Fehlender Preis für SKU: {row['SKU']}")
+    
     inventory_summary['Gesamtwert'] = inventory_summary['Menge'] * inventory_summary['Preis']
-    return inventory_summary.dropna(subset=['Preis'])
+    inventory_summary = inventory_summary.dropna(subset=['Preis'])
+    
+    return inventory_summary, errors
 
 def process_unetikettierte_ware(df):
+    errors = []
     df['SKU'] = df.iloc[:, 1].astype(str)
     df['Einzeln'] = pd.to_numeric(df.iloc[:, 3], errors='coerce')
     df['Paletten'] = pd.to_numeric(df.iloc[:, 4], errors='coerce')
+    
+    # Check for missing or invalid data
+    missing_data = df[df['SKU'].isna() | (df['Einzeln'].isna() & df['Paletten'].isna())]
+    if not missing_data.empty:
+        for _, row in missing_data.iterrows():
+            errors.append(f"Zeile {row.name + 2}: Fehlende SKU oder ungültige Mengenangaben")
+    
     df['Menge'] = df.apply(lambda row: berechne_menge(row['Einzeln'], row['Paletten'], row['SKU']), axis=1)
     df = df.dropna(subset=['SKU', 'Menge'])
     
     # Filter out excluded SKUs
+    excluded_skus = df[df['SKU'].isin(EXCLUDE_SKUS)]
+    if not excluded_skus.empty:
+        for _, row in excluded_skus.iterrows():
+            errors.append(f"SKU {row['SKU']} wurde ausgeschlossen (in EXCLUDE_SKUS)")
     df = df[~df['SKU'].isin(EXCLUDE_SKUS)]
     
     inventory_summary = df.groupby('SKU')['Menge'].sum().reset_index()
+    
+    # Check for missing prices
     inventory_summary['Preis'] = inventory_summary['SKU'].map(UNETIKETTIERTE_PREISE)
+    missing_prices = inventory_summary[inventory_summary['Preis'].isna()]
+    if not missing_prices.empty:
+        for _, row in missing_prices.iterrows():
+            errors.append(f"Fehlender Preis für SKU: {row['SKU']}")
+    
     inventory_summary['Gesamtwert'] = inventory_summary['Menge'] * inventory_summary['Preis']
-    return inventory_summary.dropna(subset=['Preis'])
+    inventory_summary = inventory_summary.dropna(subset=['Preis'])
+    
+    # Check for SKUs in PALETTEN_MENGEN that are not in the data (excluding EXCLUDE_SKUS)
+    unused_skus = set(PALETTEN_MENGEN.keys()) - set(inventory_summary['SKU']) - EXCLUDE_SKUS
+    for sku in unused_skus:
+        errors.append(f"SKU {sku} ist in PALETTEN_MENGEN vorhanden, aber nicht in den Daten")
+    
+    return inventory_summary, errors
 
 def main():
     st.title("Inventar-App")
@@ -92,9 +135,14 @@ def main():
             st.success("Datei erfolgreich hochgeladen!")
             
             if ware_typ == "Etikettierte Ware":
-                inventory_summary = process_etikettierte_ware(df)
+                inventory_summary, errors = process_etikettierte_ware(df)
             else:
-                inventory_summary = process_unetikettierte_ware(df)
+                inventory_summary, errors = process_unetikettierte_ware(df)
+            
+            if errors:
+                st.subheader("Fehler und Warnungen")
+                for error in errors:
+                    st.warning(error)
             
             st.subheader("Zusammenfassung des Inventars")
             st.dataframe(inventory_summary)
