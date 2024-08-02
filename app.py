@@ -11,12 +11,11 @@ ETIKETTIERTE_PREISE = {
 
 # Preise für unetikettierte Ware
 UNETIKETTIERTE_PREISE = {
-    '80510': 6.50, '80513': 2.95, '80511': 3.55, '80522': 2.20, '80523': 1.55,
-    '80524': 1.65, '80525': 1.80, '80526': 1.65, '80527': 1.75, '80528': 1.95,
-    '80533': 13.50, '10520': 4.21, '10695': 2.42, '1001': 117, '1002': 117,
-    '1003': 117, '1004': 117, '1005': 26.78, '2001': 74.4, '2002': 87.6,
-    '3001': 0.38, '3002': 0.21, '3003': 0.22, '3004': 0.47, '3005': 0.48,
-    '3006': 0.99, '3007': 0.5, '3008': 1.05, '80537': 1.41, '80538': 1.31, '80539': 1.7, '80534': 1.95, '80536': 1.55
+    '80522': 2.20, '80523': 1.55, '80524': 1.65, '80525': 1.80, '80526': 1.65, 
+    '80527': 1.75, '80528': 1.95, '1001': 117, '1002': 117, '1003': 117, '1004': 117, 
+    '1005': 26.78, '2001': 74.4, '2002': 87.6, '3001': 0.38, '3002': 0.21, '3003': 0.22, 
+    '3004': 0.47, '3005': 0.48, '3006': 0.99, '3007': 0.5, '3008': 1.05, '80537': 1.41, 
+    '80538': 1.31, '80539': 1.7, '80534': 1.95, '80536': 1.55
 }
 
 # Mengen pro Palette
@@ -33,6 +32,9 @@ EINHEITEN_PRO_KARTON = {
     '80522': 12, '80523': 12, '80524': 12, '80525': 12,
     '80526': 15, '80527': 15, '80528': 12, '80537': 12, '80538': 12, '80539': 12, '80534': 12, '80536': 12
 }
+
+# SKUs to exclude for unetikettierte Ware
+EXCLUDE_SKUS = {'80511', '80513', '80510', '80533', '10695', '10520'}
 
 def extract_sku(value):
     text = str(value)
@@ -67,6 +69,10 @@ def process_unetikettierte_ware(df):
     df['Paletten'] = pd.to_numeric(df.iloc[:, 4], errors='coerce')
     df['Menge'] = df.apply(lambda row: berechne_menge(row['Einzeln'], row['Paletten'], row['SKU']), axis=1)
     df = df.dropna(subset=['SKU', 'Menge'])
+    
+    # Filter out excluded SKUs
+    df = df[~df['SKU'].isin(EXCLUDE_SKUS)]
+    
     inventory_summary = df.groupby('SKU')['Menge'].sum().reset_index()
     inventory_summary['Preis'] = inventory_summary['SKU'].map(UNETIKETTIERTE_PREISE)
     inventory_summary['Gesamtwert'] = inventory_summary['Menge'] * inventory_summary['Preis']
