@@ -89,7 +89,8 @@ def process_unetikettierte_ware(df):
     # Filter rows where column B (index 1) has an article number
     df = df[df.iloc[:, 1].notna()]
     
-    df['SKU'] = df.iloc[:, 1].astype(str)
+    # Convert SKU to string and remove decimal places
+    df['SKU'] = df.iloc[:, 1].astype(str).apply(lambda x: x.split('.')[0])
     df['Einzeln'] = pd.to_numeric(df.iloc[:, 3], errors='coerce')
     df['Paletten'] = pd.to_numeric(df.iloc[:, 4], errors='coerce')
     
