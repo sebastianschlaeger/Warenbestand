@@ -86,6 +86,10 @@ def process_etikettierte_ware(df):
 
 def process_unetikettierte_ware(df):
     errors = []
+    
+    # Filter rows where column B (index 1) has an article number
+    df = df[df.iloc[:, 1].notna()]
+    
     df['SKU'] = df.iloc[:, 1].astype(str)
     df['Einzeln'] = pd.to_numeric(df.iloc[:, 3], errors='coerce')
     df['Paletten'] = pd.to_numeric(df.iloc[:, 4], errors='coerce')
@@ -124,7 +128,6 @@ def process_unetikettierte_ware(df):
         errors.append(f"SKU {sku} ist in PALETTEN_MENGEN vorhanden, aber nicht in den Daten")
     
     return inventory_summary, errors
-
 def main():
     st.title("Inventar-App")
     st.header("Excel-Upload und Inventarauswertung")
