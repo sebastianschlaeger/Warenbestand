@@ -56,6 +56,10 @@ def berechne_menge(einzeln, paletten, sku):
 
 def process_etikettierte_ware(df):
     errors = []
+    # Ignore the first two rows
+    df = df.iloc[2:]
+    df = df.reset_index(drop=True)
+    
     df['SKU'] = df.iloc[:, 3].apply(extract_sku)
     df['Menge'] = pd.to_numeric(df.iloc[:, 6], errors='coerce')
     
@@ -63,7 +67,7 @@ def process_etikettierte_ware(df):
     missing_data = df[df['SKU'].isna() | df['Menge'].isna()]
     if not missing_data.empty:
         for _, row in missing_data.iterrows():
-            errors.append(f"Zeile {row.name + 2}: Fehlende SKU oder Menge")
+            errors.append(f"Zeile {row.name + 4}: Fehlende SKU oder Menge")  # Add 4 to account for original Excel row number
     
     df = df.dropna(subset=['SKU', 'Menge'])
     inventory_summary = df.groupby('SKU')['Menge'].sum().reset_index()
