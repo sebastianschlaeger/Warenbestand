@@ -2,20 +2,21 @@ import streamlit as st
 import pandas as pd
 import re
 
-# Preise für etikettierte Ware
+# Preise für etikettierte Ware (special SKUs removed)
 ETIKETTIERTE_PREISE = {
-    '80510': 6.50, '80513': 2.95, '80511': 3.55, '80522': 3.10, '80523': 2.45,
-    '80524': 2.55, '80525': 2.70, '80526': 2.55, '80527': 2.65, '80528': 2.85,
-    '80533': 13.50, '10520': 4.21, '10695': 2.42, '80537': 2.31, '80538': 2.21, '80539': 2.6, '80534': 2.85, '80536': 2.45, '8000': 3.4
+    '80522': 3.10, '80523': 2.45, '80524': 2.55, '80525': 2.70, '80526': 2.55, 
+    '80527': 2.65, '80528': 2.85, '80537': 2.31, '80538': 2.21, '80539': 2.6, 
+    '80534': 2.85, '80536': 2.45, '8000': 3.4
 }
 
-# Preise für unetikettierte Ware
+# Preise für unetikettierte Ware (special SKUs added)
 UNETIKETTIERTE_PREISE = {
     '80522': 2.20, '80523': 1.55, '80524': 1.65, '80525': 1.80, '80526': 1.65, 
     '80527': 1.75, '80528': 1.95, '1001': 117, '1002': 117, '1003': 117, '1004': 117, 
     '1005': 26.78, '2001': 74.4, '2002': 87.6, '3001': 0.38, '3002': 0.21, '3003': 0.22, 
     '3004': 0.47, '3005': 0.48, '3006': 0.99, '3007': 0.5, '3008': 1.05, '80537': 1.41, 
-    '80538': 1.31, '80539': 1.7, '80534': 1.95, '80536': 1.55
+    '80538': 1.31, '80539': 1.7, '80534': 1.95, '80536': 1.55,
+    '80510': 6.50, '80513': 2.95, '80511': 3.55, '80533': 13.50, '10520': 4.21, '10695': 2.42
 }
 
 # Mengen pro Palette
@@ -33,7 +34,7 @@ EINHEITEN_PRO_KARTON = {
     '80526': 15, '80527': 15, '80528': 12, '80537': 12, '80538': 12, '80539': 12, '80534': 12, '80536': 12
 }
 
-# SKUs to exclude for unetikettierte Ware
+# SKUs to exclude for etikettierte Ware
 EXCLUDE_SKUS = {'80511', '80513', '80510', '80533', '10695', '10520'}
 
 def extract_sku(value):
@@ -46,8 +47,6 @@ def extract_sku(value):
 def berechne_menge(einzeln, paletten, sku):
     einzeln = float(einzeln) if pd.notna(einzeln) else 0
     paletten = float(paletten) if pd.notna(paletten) else 0
-    
-    # Removed the multiplication by EINHEITEN_PRO_KARTON as per the new requirement
     
     if sku in PALETTEN_MENGEN:
         return paletten * PALETTEN_MENGEN[sku] + einzeln
@@ -67,6 +66,13 @@ def process_etikettierte_ware(df):
     if not missing_data.empty:
         for _, row in missing_data.iterrows():
             errors.append(f"Zeile {row.name + 4}: Fehlende SKU oder Menge")  # Add 4 to account for original Excel row number
+    
+    # Filter out excluded SKUs
+    excluded_skus = df[df['SKU'].isin(EXCLUDE_SKUS)]
+    if not excluded_skus.empty:
+        for _, row in excluded_skus.iterrows():
+            errors.append(f"SKU {row['SKU']} wurde ausgeschlossen (in EXCLUDE_SKUS)")
+    df = df[~df['SKU'].isin(EXCLUDE_SKUS)]
     
     df = df.dropna(subset=['SKU', 'Menge'])
     inventory_summary = df.groupby('SKU')['Menge'].sum().reset_index()
@@ -102,13 +108,6 @@ def process_unetikettierte_ware(df):
     df['Menge'] = df.apply(lambda row: berechne_menge(row['Einzeln'], row['Paletten'], row['SKU']), axis=1)
     df = df.dropna(subset=['SKU', 'Menge'])
     
-    # Filter out excluded SKUs
-    excluded_skus = df[df['SKU'].isin(EXCLUDE_SKUS)]
-    if not excluded_skus.empty:
-        for _, row in excluded_skus.iterrows():
-            errors.append(f"SKU {row['SKU']} wurde ausgeschlossen (in EXCLUDE_SKUS)")
-    df = df[~df['SKU'].isin(EXCLUDE_SKUS)]
-    
     inventory_summary = df.groupby('SKU')['Menge'].sum().reset_index()
     
     # Check for missing prices
@@ -121,13 +120,12 @@ def process_unetikettierte_ware(df):
     inventory_summary['Gesamtwert'] = inventory_summary['Menge'] * inventory_summary['Preis']
     inventory_summary = inventory_summary.dropna(subset=['Preis'])
     
-    # Check for SKUs in PALETTEN_MENGEN that are not in the data (excluding EXCLUDE_SKUS)
-    unused_skus = set(PALETTEN_MENGEN.keys()) - set(inventory_summary['SKU']) - EXCLUDE_SKUS
+    # Check for SKUs in PALETTEN_MENGEN that are not in the data
+    unused_skus = set(PALETTEN_MENGEN.keys()) - set(inventory_summary['SKU'])
     for sku in unused_skus:
         errors.append(f"SKU {sku} ist in PALETTEN_MENGEN vorhanden, aber nicht in den Daten")
     
     return inventory_summary, errors
-
 
 def main():
     st.title("Inventar-App")
