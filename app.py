@@ -47,8 +47,7 @@ def berechne_menge(einzeln, paletten, sku):
     einzeln = float(einzeln) if pd.notna(einzeln) else 0
     paletten = float(paletten) if pd.notna(paletten) else 0
     
-    if sku in EINHEITEN_PRO_KARTON:
-        einzeln *= EINHEITEN_PRO_KARTON[sku]
+    # Removed the multiplication by EINHEITEN_PRO_KARTON as per the new requirement
     
     if sku in PALETTEN_MENGEN:
         return paletten * PALETTEN_MENGEN[sku] + einzeln
