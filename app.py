@@ -54,12 +54,12 @@ def berechne_menge(einzeln, paletten, sku):
 
 def process_etikettierte_ware(df):
     errors = []
-    # Ignore the first two rows
-    df = df.iloc[2:]
+    # Ignore the first three rows (since data starts from row 4)
+    df = df.iloc[3:]
     df = df.reset_index(drop=True)
     
-    df['SKU'] = df.iloc[:, 3].apply(extract_sku)
-    df['Menge'] = pd.to_numeric(df.iloc[:, 6], errors='coerce')
+    df['SKU'] = df.iloc[:, 1].apply(extract_sku)
+    df['Menge'] = pd.to_numeric(df.iloc[:, 2], errors='coerce')
     
     # Check for missing SKUs or quantities
     missing_data = df[df['SKU'].isna() | df['Menge'].isna()]
