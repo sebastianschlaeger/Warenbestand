@@ -170,5 +170,8 @@ def main():
             st.error(f"Fehler beim Verarbeiten der Datei: {str(e)}")
             st.write("Bitte überprüfen Sie das Format Ihrer Excel-Datei und stellen Sie sicher, dass die Spalten die erwarteten Daten enthalten.")
 
+    # Hinzugefügte Testzeile
+    st.write("Das ist ein Test")
+
 if __name__ == "__main__":
     main()
