@@ -126,7 +126,9 @@ def process_unetikettierte_ware(df):
 
 def main():
     st.title("Inventar-App")
-    st.header("Excel-Upload und Inventarauswertung für etikettierte Ware")
+    st.header("Excel-Upload und Inventarauswertung")
+    
+    ware_typ = st.radio("Wählen Sie den Warentyp:", ("Etikettierte Ware", "Unetikettierte Ware"))
     
     uploaded_file = st.file_uploader("Wählen Sie eine Excel-Datei", type="xlsx")
     
@@ -135,7 +137,10 @@ def main():
             df = pd.read_excel(uploaded_file)
             st.success("Datei erfolgreich hochgeladen!")
             
-            inventory_summary, errors = process_etikettierte_ware(df)
+            if ware_typ == "Etikettierte Ware":
+                inventory_summary, errors = process_etikettierte_ware(df)
+            else:
+                inventory_summary, errors = process_unetikettierte_ware(df)
             
             if errors:
                 st.subheader("Fehler und Warnungen")
