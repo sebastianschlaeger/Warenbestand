@@ -54,27 +54,30 @@ def berechne_menge(einzeln, paletten, sku):
 
 def process_etikettierte_ware(df):
     errors = []
-    
-    # Ignoriere die ersten 3 Zeilen und beginne bei Zeile 4
-    df = df.iloc[3:]
+    # Ignore the first two rows
+    df = df.iloc[2:]
     df = df.reset_index(drop=True)
     
-    # Extrahiere SKU aus der zweiten Spalte (index 1)
-    df['SKU'] = df.iloc[:, 1].apply(lambda x: str(x).split('-')[0])
+    df['SKU'] = df.iloc[:, 3].apply(extract_sku)
+    df['Menge'] = pd.to_numeric(df.iloc[:, 6], errors='coerce')
     
-    # Die Menge befindet sich in der dritten Spalte (index 2)
-    df['Menge'] = pd.to_numeric(df.iloc[:, 2], errors='coerce')
-    
-    # Überprüfe auf fehlende SKUs oder Mengen
+    # Check for missing SKUs or quantities
     missing_data = df[df['SKU'].isna() | df['Menge'].isna()]
     if not missing_data.empty:
         for _, row in missing_data.iterrows():
-            errors.append(f"Zeile {row.name + 4}: Fehlende SKU oder Menge")  # +4 für die Excel-Zeilennummer
+            errors.append(f"Zeile {row.name + 4}: Fehlende SKU oder Menge")  # Add 4 to account for original Excel row number
+    
+    # Filter out excluded SKUs
+    excluded_skus = df[df['SKU'].isin(EXCLUDE_SKUS)]
+    if not excluded_skus.empty:
+        for _, row in excluded_skus.iterrows():
+            errors.append(f"SKU {row['SKU']} wurde ausgeschlossen (in EXCLUDE_SKUS)")
+    df = df[~df['SKU'].isin(EXCLUDE_SKUS)]
     
     df = df.dropna(subset=['SKU', 'Menge'])
     inventory_summary = df.groupby('SKU')['Menge'].sum().reset_index()
     
-    # Überprüfe auf fehlende Preise
+    # Check for missing prices
     inventory_summary['Preis'] = inventory_summary['SKU'].map(ETIKETTIERTE_PREISE)
     missing_prices = inventory_summary[inventory_summary['Preis'].isna()]
     if not missing_prices.empty:
