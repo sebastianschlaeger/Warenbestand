@@ -54,12 +54,12 @@ def berechne_menge(einzeln, paletten, sku):
 
 def process_etikettierte_ware(df):
     errors = []
-    # Ignore the first three rows (since data starts from row 4)
-    df = df.iloc[3:]
+    # Ignore the first two rows
+    df = df.iloc[2:]
     df = df.reset_index(drop=True)
     
-    df['SKU'] = df.iloc[:, 1].apply(extract_sku)
-    df['Menge'] = pd.to_numeric(df.iloc[:, 2], errors='coerce')
+    df['SKU'] = df.iloc[:, 3].apply(extract_sku)
+    df['Menge'] = pd.to_numeric(df.iloc[:, 6], errors='coerce')
     
     # Check for missing SKUs or quantities
     missing_data = df[df['SKU'].isna() | df['Menge'].isna()]
@@ -169,9 +169,6 @@ def main():
         except Exception as e:
             st.error(f"Fehler beim Verarbeiten der Datei: {str(e)}")
             st.write("Bitte überprüfen Sie das Format Ihrer Excel-Datei und stellen Sie sicher, dass die Spalten die erwarteten Daten enthalten.")
-
-    # Hinzugefügte Testzeile
-    st.write("Das ist ein Test")
 
 if __name__ == "__main__":
     main()
